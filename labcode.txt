@@ -1,0 +1,360 @@
+/* =========================================
+   Source 1: Lex Program (Replace 'abc')[cite: 1]
+   ========================================= */
+%{
+	int i;
+%}
+
+%%
+abc {printf("ABC\n");} /* Added missing semicolon[cite: 1] */
+[a-zA-Z]* { /* Removed space from regex character class[cite: 1] */
+	for(i=0; i<yyleng-2; i++){ /* Fixed out-of-bounds condition (yyleng to yyleng-2)[cite: 1] */
+		if(yytext[i]=='a' && yytext[i+1]=='b' && yytext[i+2]=='c'){
+			yytext[i] = 'A';
+			yytext[i+1] = 'B';
+			yytext[i+2] = 'C';
+		}
+	}
+	printf("\n%s", yytext);
+}
+
+[\t]+ {return 0;}
+.* {ECHO;}
+\n {printf("%s", yytext);}
+
+%%
+
+int yywrap(){
+	return 1;
+}
+
+int main(){
+	yylex();
+	return 0;
+}
+
+/* =========================================
+   Source 2: Lex Program (Vowels & Consonants)[cite: 2]
+   ========================================= */
+%{
+	int v = 0;
+	int c = 0;
+%}
+
+%%
+
+[aeiouAEIOU] {v++;}
+[a-zA-Z] {c++;}
+\n {
+	printf("\nVowels: %d \nConsonants: %d\n", v, c);
+	v = 0;
+	c = 0;
+}
+%%
+
+int yywrap(){
+	return 1;
+}
+
+int main(){
+	printf("\nEnter a string: ");
+	yylex();
+	return 0;
+}
+
+/* =========================================
+   Source 3: Yacc Program (Arithmetic Expression)[cite: 3]
+   ========================================= */
+%{
+    #include <stdio.h>
+    int valid = 1;
+    int yyerror(char *s);
+    int yylex();
+%}
+
+%token NUMBER
+%left '+' '-'
+%left '*' '/' '%'
+
+%%
+
+ArithmeticExpression : E { /* Fixed typo: ArithemeticExpression -> ArithmeticExpression[cite: 3] */
+    printf("Result: %d\n", $$);
+    return 0;
+}
+
+E : E '+' E { $$ = $1 + $3; } |
+    E '-' E { $$ = $1 - $3; } |
+    E '*' E { $$ = $1 * $3; } |
+    E '/' E {
+        if($3 == 0) {
+            printf("Error: Division by zero\n");
+            valid = 0;
+            return 0;
+        }
+        $$ = $1 / $3;
+    } |
+    E '%' E { $$ = $1 % $3; } |
+    '(' E ')' { $$ = $2; }    |
+    NUMBER    { $$ = $1; }
+;
+
+%%
+
+int yyerror(char *s){
+    printf("Invalid\n");
+    valid = 0;
+    return 0;
+}
+
+int main(){
+    printf("Enter an expression: ");
+    yyparse();
+    if(valid){
+        printf("Valid\n");
+    }
+    return 0;
+}
+
+/* =========================================
+   Source 4: Lex Program (Identifier Recognition)[cite: 4]
+   ========================================= */
+%{
+	#include "y.tab.h"
+%}
+
+%%
+
+[a-zA-Z][a-zA-Z0-9]* { return letter; } /* Added braces around action[cite: 4] */
+[0-9]* { return digit; } /* Added braces around action[cite: 4] */
+. { return yytext[0]; } /* Added braces around action[cite: 4] */
+\n { return 0; } /* Added braces around action[cite: 4] */
+
+%%
+
+int yywrap(){
+	return 1;
+}
+
+/* =========================================
+   Source 5: Yacc Program (Identifier Recognition)[cite: 5]
+   ========================================= */
+%{
+	#include <stdio.h>
+	int valid = 1;
+    int yylex(void); /* Added missing prototype[cite: 5] */
+    int yyerror(char *s); /* Standardized prototype parameter[cite: 5] */
+%}
+%token letter digit
+
+%%
+
+start : letter s
+s : letter s | digit s | ;
+
+%%
+
+int yyerror(char *s){ /* Added char *s to match standard Yacc signature[cite: 5] */
+	printf("Invalid\n");
+	valid = 0;
+	return 0;
+}
+
+int main(){
+	printf("Enter a string: ");
+	yyparse();
+	if(valid){
+		printf("Valid\n");
+	}
+	return 0;
+}
+
+/* =========================================
+   Source 6: Lex Program (Word/Line Count)[cite: 6]
+   ========================================= */
+%{
+#include<stdio.h>
+#include<string.h>
+int wc=0, lc=0, ch=0, sc=0;
+%}
+%%
+\n lc++;
+[ ] sc++;
+[^\t\n] ch++;
+%%
+int main(){ /* Changed void main to standard int main[cite: 6] */
+    printf("Enter the program\n");
+    yylex();
+    printf("\n No of lines = %d",lc);
+    printf("\n No of characters = %d", ch);
+    printf("\n No of words = %d", lc+sc);
+    return 0; /* Added standard return[cite: 6] */
+}
+
+int yywrap(){
+    return 1;
+}
+
+/* =========================================
+   Source 7: Lex Program (Calc Tokens)[cite: 7]
+   ========================================= */
+%{
+	#include <stdlib.h>
+	#include "y.tab.h"
+	extern int yylval;
+%}
+
+%%
+
+[0-9]+ {
+	yylval = atoi(yytext);
+	return NUMBER;
+}
+. { return yytext[0]; } /* Added missing braces[cite: 7] */
+\n { return 0; } /* Added missing braces[cite: 7] */
+
+%%
+
+int yywrap(){
+	return 0;
+}
+
+/* =========================================
+   Source 8: recdecparse.c[cite: 8]
+   ========================================= */
+#include <string.h>
+#include <stdio.h>
+#define epsilon "\u03B5"
+
+int pt = 0, len, flag = 1;
+char str[30];
+
+void E();
+void T();
+void F();
+void TPRIME();
+void EPRIME();
+void ADVANCE();
+
+int main(){
+    /* Removed invalid escape character '\%' before string specifier[cite: 8] */
+	printf("E -> TE' \nE' -> +TE'%s \nT -> FT' \nT' -> *FT'%s \nF -> (E)/a\n", epsilon, epsilon);
+	printf("Enter the string: ");
+	scanf("%s", str);
+	len = strlen(str);
+	E();
+	if(flag && (pt == len)){
+		printf("\nEntered string is Valid\n");
+	}else{
+		printf("\nEntered string is Invalid\n");
+	}
+	return 0;
+}
+
+void E(){
+	T();
+	EPRIME();
+}
+
+void T(){
+	F();
+	TPRIME();
+}
+
+void EPRIME(){
+	if(str[pt] == '+'){
+  		ADVANCE();
+		T();
+		EPRIME();
+	}
+}
+
+void TPRIME(){
+	if(str[pt] == '*'){
+  		ADVANCE();
+		F();
+		TPRIME();
+	}
+}
+
+void ADVANCE(){
+	pt++;
+}
+
+void F(){
+	if(str[pt] == '('){
+		ADVANCE();
+		E();
+		if(str[pt]==')'){
+			ADVANCE();
+		}else{
+			flag = 0;
+		}
+	}else if(str[pt] == 'a'){
+		ADVANCE();
+	}else{
+		flag = 0;
+	}
+}
+
+/* =========================================
+   Source 9: lexAnalyser.c[cite: 9]
+   ========================================= */
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+int main(){
+	char str[30], c;
+	int i = 0, num=0, line_count = 0;
+	FILE *fp = fopen("input.txt", "w");
+
+	printf("Enter c program:\n");
+	while((c = getchar()) != EOF){
+		putc(c, fp);
+	}
+	fclose(fp);
+
+	fp = fopen("input.txt", "r");
+	while((c = getc(fp)) != EOF){
+
+		if(isdigit(c)){
+			num = c - '0'; /* Replaced hardcoded 48 with '0' for cleaner code[cite: 9] */
+			while(isdigit(c = getc(fp))){
+				num = num*10+(c-'0'); /* Replaced hardcoded 48 with '0'[cite: 9] */
+			}
+			printf("%d is a number\n", num);
+			num = 0;
+			ungetc(c, fp);
+
+		}else if(isalpha(c)){
+			str[i++] = c;
+			c = getc(fp);
+			while(isalpha(c) || isdigit(c) || c=='_' || c=='$'){
+				str[i++] = c;
+				c = getc(fp);
+			}
+			str[i] = '\0';
+			if( strcmp(str, "int") == 0 || strcmp(str, "char") == 0 ||
+				strcmp(str, "float") == 0 || strcmp(str, "if") == 0 ||
+				strcmp(str, "else") == 0 || strcmp(str, "for") == 0
+			){
+				printf("%s is a keyword\n", str);
+			}else{
+				printf("%s is an identifier\n", str);
+			}
+			ungetc(c, fp);
+			i=0;
+
+		}else if(c==' ' || c=='\t'){
+			printf("\n");
+		}else if(c=='\n'){
+			line_count++;
+		}else{
+			printf("%c is a special character\n", c);
+		}
+	}
+	printf("Number of lines: %d\n", line_count);
+	fclose(fp);
+
+	return 0;
+}
