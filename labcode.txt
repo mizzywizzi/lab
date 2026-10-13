@@ -1,0 +1,234 @@
+*Implementation of lex* 
+
+
+keywords "if"|"for"|"else"|"int"|"char"|"double"|"float"
+const[0-9]*
+identifier[a-zA-Z0-9]*
+math_op[+|-|*|/]
+comp_op[=|>|<]
+sp_ch[,|;|(|)|{|}]
+
+%%
+
+{keywords} printf("\n%s\t is a keyword",yytext);
+{const} printf("\n%s\t is a constant",yytext);
+{identifier} printf("\n%s\t is an identifier",yytext);
+{math_op} printf("\n%s\t is a arithemetic operator",yytext);
+{comp_op} printf("\n%s\t is a comparision operator", yytext);
+{sp_ch} printf("\n%s\t is a special character", yytext);
+
+%%
+
+int yywrap(){
+	return 1;
+}
+
+int main(int argc, char **argv){
+	yyin = fopen(argv[1], "r");
+	yylex();
+	fclose(yyin);
+	return 0;
+}
+
+
+*Valiexp.l*
+
+
+%{
+	#include "y.tab.h"
+%}
+
+%%
+
+[a-zA-Z]+ return ID;
+[0-9]+ return NUMBER;
+. return yytext[0];
+\n return 0;
+
+%%
+
+int yywrap(){
+	return 1;
+}
+
+
+
+*Validexp.y*
+
+%{
+	int valid = 1;
+%}
+%token ID NUMBER
+%left '+''-'
+%left '*''/''%'
+
+%%
+
+stmt : E;
+E : E'+'E |
+	E'-'E |
+	E'*'E |
+	E'/'E |
+	E'%'E |
+	'('E')'|
+	ID |
+	NUMBER
+;
+
+%%
+
+int yyerror(){
+	printf("Invalid Arithementic Expression\n");
+	valid = 0;
+	return 0;
+}
+
+int main(){
+	printf("Enter an Arithemetic Expression: ");
+	yyparse();
+	if(valid){
+		printf("Valid Arithementic Expression\n");
+	}
+	return 0;
+}
+
+
+*Epsilon closure*
+
+
+#include <stdio.h>
+#include <string.h>
+
+char result[20][20], states[20][20], copy[20];
+
+void display(int n){
+	printf("epsilon closure of %s => {", copy);
+	for(int i=0; i<n; i++){
+		printf("\t%s\t", result[i]);
+	}
+	printf("}\n");
+}
+
+void add_state(char state[20], int i){
+	strcpy(result[i], state);
+}
+
+void main(){
+	int n, i;
+	char state[20], state1[20], state2[20], input[20];
+	
+	FILE *fp = fopen("input.dat", "r");
+	
+	printf("Enter no of states: ");
+	scanf("%d", &n);
+	printf("Enter the states: \n");
+	
+	for(int j=0; j<n; j++){
+		scanf("%s", states[j]);
+	}
+	
+	for(int j=0; j<n; j++){
+		i = 0;
+		
+		strcpy(state, states[j]);
+		strcpy(copy, states[j]);
+		add_state(state, i++);
+		
+		while(!feof(fp)){
+			fscanf(fp, "%s%s%s", state1, input, state2);
+			if(strcmp(state, state1) == 0){
+				if(strcmp(input, "e")==0){
+					add_state(state2, i++);
+					strcpy(state, state2);
+				}
+			}
+		}
+		display(i);
+		rewind(fp);
+	}
+	
+	fclose(fp);
+}
+
+
+*Backend of compiler* 
+
+
+#include <stdio.h>
+#include <string.h>
+int main()
+{
+    char icode[10][30], str[20], opr[10];
+    int i = 0;
+    printf("\n Enter the set of intermediate code (terminated by exit):\n");
+    do
+    {
+        scanf("%s", icode[i]);
+    } while (strcmp(icode[i++], "exit") != 0);
+    printf("\n target code generation");
+    printf("\n************************");
+    i = 0;
+    do
+    {
+        strcpy(str, icode[i]);
+        switch (str[3])
+        {
+        case '+':
+            strcpy(opr, "ADD");
+            break;
+        case '-':
+            strcpy(opr, "SUB");
+            break;
+        case '*':
+            strcpy(opr, "MUL");
+            break;
+        case '/':
+            strcpy(opr, "DIV");
+            break;
+        }
+        printf("\n\tMov %c,R%d", str[2], i);
+        printf("\n\t%s%c,R%d", opr, str[4], i);
+        printf("\n\tMov R%d,%c", i, str[0]);
+    } while (strcmp(icode[++i], "exit") != 0);
+    return 0;
+}
+
+
+
+*Substring conversion* 
+
+
+%{	
+	int i;
+%}
+
+%%
+
+[a-z A-Z]* {
+	for(i=0; i<=yyleng; i++){
+		if(yytext[i]=='a' && yytext[i+1]=='b' && yytext[i+2]=='c'){
+			yytext[i] = 'A';
+			yytext[i+1] = 'B';
+			yytext[i+2] = 'C';
+		}
+	}
+	printf("\n%s", yytext);
+}
+
+[\t]+ {return 0;}
+.* {ECHO;}
+\n {printf("%s", yytext);}
+
+%%
+
+int yywrap(){
+	return 1;
+}
+
+int main(){
+	yylex();
+	return 0;
+}
+
+
+
