@@ -1,234 +1,668 @@
-*Implementation of lex* 
+all  
 
-
-keywords "if"|"for"|"else"|"int"|"char"|"double"|"float"
-const[0-9]*
-identifier[a-zA-Z0-9]*
-math_op[+|-|*|/]
-comp_op[=|>|<]
-sp_ch[,|;|(|)|{|}]
-
-%%
-
-{keywords} printf("\n%s\t is a keyword",yytext);
-{const} printf("\n%s\t is a constant",yytext);
-{identifier} printf("\n%s\t is an identifier",yytext);
-{math_op} printf("\n%s\t is a arithemetic operator",yytext);
-{comp_op} printf("\n%s\t is a comparision operator", yytext);
-{sp_ch} printf("\n%s\t is a special character", yytext);
-
-%%
-
-int yywrap(){
-	return 1;
-}
-
-int main(int argc, char **argv){
-	yyin = fopen(argv[1], "r");
-	yylex();
-	fclose(yyin);
-	return 0;
-}
-
-
-*Valiexp.l*
-
-
+count lines
 %{
-	#include "y.tab.h"
+#include <stdio.h>
+#include <string.h>
+
+int wc = 0, lc = 0, ch = 0, sc = 0;
 %}
 
 %%
 
-[a-zA-Z]+ return ID;
-[0-9]+ return NUMBER;
-. return yytext[0];
-\n return 0;
+\n          { lc++; ch++; }
+[ \t]+      { sc += yyleng; ch += yyleng; }
+[^ \t\n]+   { wc++; ch += yyleng; }
 
 %%
 
-int yywrap(){
-	return 1;
+int main()
+{
+    printf("Enter the text\n");
+
+    yylex();
+
+    printf("\n--- Results ---\n");
+    printf("Number of lines      = %d\n", lc);
+    printf("Number of words      = %d\n", wc);
+    printf("Number of characters = %d\n", ch);
+    printf("Number of spaces     = %d\n", sc);
+
+    return 0;
 }
 
+int yywrap()
+{
+    return 1;
+}
+
+lex lex_count.l
+gcc lex.yy.c -o count -ll
+./count
 
 
-*Validexp.y*
+lexical analyzer LEX
 
 %{
-	int valid = 1;
+    #include<stdio.h>
+    FILE* yyin;
 %}
-%token ID NUMBER
-%left '+''-'
-%left '*''/''%'
 
 %%
-
-stmt : E;
-E : E'+'E |
-	E'-'E |
-	E'*'E |
-	E'/'E |
-	E'%'E |
-	'('E')'|
-	ID |
-	NUMBER
-;
-
+"if"|"else"|"int"|"char"|"while"|"do"|"for"|"float" {printf("%s is a keyword\n",yytext);}
+[a-zA-Z][a-zA-Z0-9]* {printf("%s is an identifier\n",yytext);}
+[0-9]+ {printf("%s is a number\n",yytext);}
+[*/+-] {printf("%s is arithematic opr\n",yytext);}
+[(){};:] {printf("%s is a special character\n",yytext);}
+"=="|"!="|"<"|">"|">="|"<="|"=" {printf("%s is eq opr\n",yytext);}
 %%
-
-int yyerror(){
-	printf("Invalid Arithementic Expression\n");
-	valid = 0;
-	return 0;
+int yywrap(){
+    return 1;
 }
 
 int main(){
-	printf("Enter an Arithemetic Expression: ");
-	yyparse();
-	if(valid){
-		printf("Valid Arithementic Expression\n");
-	}
-	return 0;
+    yyin=fopen("input.txt","r");
+    yylex();
+    return 0;
+}
+  
+lex lex_count.l
+gcc lex.yy.c -o count -ll
+./count
+
+
+vowels
+
+%{
+    #include<stdio.h>
+    int vc=0,cc=0;
+%}
+
+
+%%
+[aeiouAEIOU] {vc++;}
+[a-zA-Z] {cc++;}
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main(){
+    printf("enter a string:\n");
+    yylex();
+    printf("vowels:%d\nconsonents:%d\n",vc,cc);
+    return 0;
+}
+  
+cntrl +D
+
+flex vowels.l
+gcc lex.yy.c -o vowels -lfl
+./vowels  
+
+
+substring
+
+
+%{
+#include<stdio.h>
+%}
+%%
+abc {printf("ABC");}
+\n {return 0;}
+. {printf("%s",yytext);}
+%%
+
+int yywrap(){
+return 1;
+}
+
+int main(){
+printf("enter string\n");
+yylex();
+return 0;
+
+flex substring.l
+gcc lex.yy.c -o substring -lfl
+./substring
+
+
+
+valid variable/ variable identifirer
+
+reco.l
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[a-zA-Z]    { return letter; }
+[0-9]       { return digit; }
+\n          { return 0; }
+.           { return yytext[0]; }
+
+%%
+
+int yywrap()
+{
+    return 1;
 }
 
 
-*Epsilon closure*
+reco.y
 
 
-#include <stdio.h>
-#include <string.h>
+%{
+#include<stdio.h>
+int valid = 1;
+%}
 
-char result[20][20], states[20][20], copy[20];
+%token digit letter
 
-void display(int n){
-	printf("epsilon closure of %s => {", copy);
-	for(int i=0; i<n; i++){
-		printf("\t%s\t", result[i]);
-	}
-	printf("}\n");
+%%
+
+start : letter s
+      ;
+
+s : letter s
+  | digit s
+  |
+  ;
+
+%%
+
+int yyerror(char *s)
+{
+    printf("\nIt is not a valid variable\n");
+    valid = 0;
+    return 0;
 }
 
-void add_state(char state[20], int i){
-	strcpy(result[i], state);
-}
-
-void main(){
-	int n, i;
-	char state[20], state1[20], state2[20], input[20];
-	
-	FILE *fp = fopen("input.dat", "r");
-	
-	printf("Enter no of states: ");
-	scanf("%d", &n);
-	printf("Enter the states: \n");
-	
-	for(int j=0; j<n; j++){
-		scanf("%s", states[j]);
-	}
-	
-	for(int j=0; j<n; j++){
-		i = 0;
-		
-		strcpy(state, states[j]);
-		strcpy(copy, states[j]);
-		add_state(state, i++);
-		
-		while(!feof(fp)){
-			fscanf(fp, "%s%s%s", state1, input, state2);
-			if(strcmp(state, state1) == 0){
-				if(strcmp(input, "e")==0){
-					add_state(state2, i++);
-					strcpy(state, state2);
-				}
-			}
-		}
-		display(i);
-		rewind(fp);
-	}
-	
-	fclose(fp);
-}
-
-
-*Backend of compiler* 
-
-
-#include <stdio.h>
-#include <string.h>
 int main()
 {
-    char icode[10][30], str[20], opr[10];
-    int i = 0;
-    printf("\n Enter the set of intermediate code (terminated by exit):\n");
-    do
+    printf("\nEnter a variable name\n");
+
+    yyparse();
+
+    if(valid)
     {
-        scanf("%s", icode[i]);
-    } while (strcmp(icode[i++], "exit") != 0);
-    printf("\n target code generation");
-    printf("\n************************");
-    i = 0;
-    do
-    {
-        strcpy(str, icode[i]);
-        switch (str[3])
-        {
-        case '+':
-            strcpy(opr, "ADD");
-            break;
-        case '-':
-            strcpy(opr, "SUB");
-            break;
-        case '*':
-            strcpy(opr, "MUL");
-            break;
-        case '/':
-            strcpy(opr, "DIV");
-            break;
-        }
-        printf("\n\tMov %c,R%d", str[2], i);
-        printf("\n\t%s%c,R%d", opr, str[4], i);
-        printf("\n\tMov R%d,%c", i, str[0]);
-    } while (strcmp(icode[++i], "exit") != 0);
+        printf("\nIt is a valid variable\n");
+    }
+
     return 0;
 }
 
 
+compile
 
-*Substring conversion* 
+yacc -d reco.y
+lex reco.l
+gcc y.tab.c lex.yy.c -o reco -ll
+./reco
 
 
-%{	
-	int i;
+arithmetic
+
+arithm.y
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+
+int yyerror();
+%}
+
+%token ID NUMBER
+
+%left '+' '-'
+%left '*' '/'
+
+%%
+
+stmt : expr
+     ;
+
+expr : expr '+' expr
+     | expr '-' expr
+     | expr '*' expr
+     | expr '/' expr
+     | '(' expr ')'
+     | ID
+     | NUMBER
+     ;
+
+%%
+
+int main()
+{
+    printf("Enter an expression: ");
+    yyparse();
+
+    printf("\nValid Expression\n");
+    return 0;
+}
+
+int yyerror()
+{
+    printf("\nInvalid Expression\n");
+    exit(1);
+}
+
+arithm.l
+
+
+%{
+#include "y.tab.h"
 %}
 
 %%
 
-[a-z A-Z]* {
-	for(i=0; i<=yyleng; i++){
-		if(yytext[i]=='a' && yytext[i+1]=='b' && yytext[i+2]=='c'){
-			yytext[i] = 'A';
-			yytext[i+1] = 'B';
-			yytext[i+2] = 'C';
-		}
-	}
-	printf("\n%s", yytext);
-}
-
-[\t]+ {return 0;}
-.* {ECHO;}
-\n {printf("%s", yytext);}
+[a-zA-Z]+    { return ID; }
+[0-9]+       { return NUMBER; }
+[ \t]+       ;
+\n           { return 0; }
+.            { return yytext[0]; }
 
 %%
 
-int yywrap(){
-	return 1;
-}
-
-int main(){
-	yylex();
-	return 0;
+int yywrap()
+{
+    return 1;
 }
 
 
+yacc -d recogn.y
+lex recogn.l
+gcc y.tab.c lex.yy.c -o recogn -ll
+./recogn
 
+recursuve decent pasrerer
+
+
+#include <stdio.h>
+#include <string.h>
+
+int flag = 0, len, pt = 0;
+char st[25];
+
+void e();
+void t();
+void f();
+void eprime();
+void tprime();
+void advance();
+
+int main()
+{
+    printf("\nRecursive Descent Parser\n");
+
+    printf("\nGrammar:\n");
+    printf("E  -> TE'\n");
+    printf("E' -> +TE' | epsilon\n");
+    printf("T  -> FT'\n");
+    printf("T' -> *FT' | epsilon\n");
+    printf("F  -> (E) | a\n");
+
+    printf("\nEnter the string: ");
+    scanf("%24s", st);
+
+    len = strlen(st);
+
+    e();
+
+    if(flag == 0 && pt == len)
+        printf("\nString is Accepted\n");
+    else
+        printf("\nString is Rejected\n");
+
+    return 0;
+}
+
+void e()
+{
+    t();
+    eprime();
+}
+
+void t()
+{
+    f();
+    tprime();
+}
+
+void eprime()
+{
+    if(st[pt] == '+')
+    {
+        advance();
+        t();
+        eprime();
+    }
+}
+
+void tprime()
+{
+    if(st[pt] == '*')
+    {
+        advance();
+        f();
+        tprime();
+    }
+}
+
+void f()
+{
+    if(st[pt] == '(')
+    {
+        advance();
+        e();
+
+        if(st[pt] == ')')
+            advance();
+        else
+            flag = 1;
+    }
+    else if(st[pt] == 'a')
+    {
+        advance();
+    }
+    else
+    {
+        flag = 1;
+    }
+}
+
+void advance()
+{
+    if(st[pt] != '\0')
+        pt++;
+}
+
+
+
+CALCULATOR
+
+calc.l 
+
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include "y.tab.h"
+
+extern int yylval;
+%}
+
+%%
+
+[0-9]+ {
+    yylval = atoi(yytext);
+    return NUMBER;
+}
+
+[ \t]   ;
+
+\n      return 0;
+
+.       return yytext[0];
+
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+
+calc.y
+
+
+%{
+#include <stdio.h>
+int flag = 0;
+%}
+
+%token NUMBER
+
+%left '+' '-'
+%left '*' '/' '%'
+%left '(' ')'
+
+%%
+
+ArithmeticExpression:
+    E {
+        printf("\nResult = %d\n", $1);
+    }
+    ;
+
+E : E '+' E { $$ = $1 + $3; }
+  | E '-' E { $$ = $1 - $3; }
+  | E '*' E { $$ = $1 * $3; }
+  | E '/' E { $$ = $1 / $3; }
+  | E '%' E { $$ = $1 % $3; }
+  | '(' E ')' { $$ = $2; }
+  | NUMBER { $$ = $1; }
+  ;
+
+%%
+
+int main()
+{
+    printf("Enter Arithmetic Expression:\n");
+
+    yyparse();
+
+    if(flag == 0)
+        printf("Entered arithmetic expression is Valid\n");
+
+    return 0;
+}
+
+int yyerror(char *s)
+{
+    printf("Entered arithmetic expression is Invalid\n");
+    flag = 1;
+    return 0;
+}
+
+yacc -d cal.y
+lex cal.l
+gcc y.tab.c lex.yy.c -o cal -ll
+./cal
+
+
+lexical analyzer
+
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[])
+{
+    FILE *f1, *f2;
+    int c;
+    char str[100];
+    int lineno = 1, num = 0, i = 0;
+
+    if (argc < 2)
+    {
+        printf("Usage: %s <input_file>\n", argv[0]);
+        return 1;
+    }
+
+    f1 = fopen(argv[1], "r");
+
+    if (f1 == NULL)
+    {
+        printf("Error: Could not open input file %s\n", argv[1]);
+        return 1;
+    }
+
+    f2 = fopen("output.txt", "w");
+
+    if (f2 == NULL)
+    {
+        printf("Error: Could not create output.txt\n");
+        fclose(f1);
+        return 1;
+    }
+
+    while ((c = getc(f1)) != EOF)
+    {
+        if (isdigit(c))
+        {
+            num = c - '0';
+            c = getc(f1);
+
+            while (isdigit(c))
+            {
+                num = num * 10 + (c - '0');
+                c = getc(f1);
+            }
+
+            fprintf(f2, "%d is a number\n", num);
+            ungetc(c, f1);
+        }
+
+        else if (isalpha(c))
+        {
+            i = 0;
+            str[i++] = (char)c;
+            c = getc(f1);
+
+            while (isdigit(c) || isalpha(c) ||
+                   c == '_' || c == '$')
+            {
+                if (i < 99)
+                    str[i++] = (char)c;
+
+                c = getc(f1);
+            }
+
+            str[i] = '\0';
+
+            if (strcmp("for", str) == 0 ||
+                strcmp("while", str) == 0 ||
+                strcmp("do", str) == 0 ||
+                strcmp("int", str) == 0 ||
+                strcmp("float", str) == 0 ||
+                strcmp("char", str) == 0 ||
+                strcmp("double", str) == 0 ||
+                strcmp("static", str) == 0 ||
+                strcmp("case", str) == 0)
+            {
+                fprintf(f2, "%s is a keyword\n", str);
+            }
+            else
+            {
+                fprintf(f2, "%s is an identifier\n", str);
+            }
+
+            ungetc(c, f1);
+        }
+
+        else if (c == ' ' || c == '\t')
+        {
+            fprintf(f2, "\n");
+        }
+
+        else if (c == '\n')
+        {
+            lineno++;
+        }
+
+        else
+        {
+            fprintf(f2, "%c is a special symbol\n", c);
+        }
+    }
+
+    printf("Total no of lines are: %d\n", lineno);
+
+    fclose(f1);
+    fclose(f2);
+
+    return 0;
+}
+gcc lex.c -o lex
+./lex test.c
+cat output.txt
+
+
+
+backend
+#include <stdio.h>
+#include <string.h>
+
+int main()
+{
+    char icode[20][30], str[30], opr[10];
+    int i = 0;
+
+    printf("\nEnter the set of intermediate code (terminated by exit):\n");
+
+    // Input intermediate code lines
+    do
+    {
+        scanf("%s", icode[i]);
+    } while (strcmp(icode[i++], "exit") != 0);
+
+    printf("\nTarget Code Generation");
+    printf("\n******************************");
+
+    i = 0;
+
+    // Process each intermediate code line
+    do
+    {
+        strcpy(str, icode[i]);
+
+        // Check if it's an assignment-only statement (like a=b)
+        if (strlen(str) == 3)
+        {
+            printf("\n\tMov %c,R%d", str[2], i);
+            printf("\n\tMov R%d,%c", i, str[0]);
+        }
+        else
+        {
+            // Map operator to assembly mnemonic
+            switch (str[3])
+            {
+                case '+':
+                    strcpy(opr, "ADD");
+                    break;
+                case '-':
+                    strcpy(opr, "SUB");
+                    break;
+                case '*':
+                    strcpy(opr, "MUL");
+                    break;
+                case '/':
+                    strcpy(opr, "DIV");
+                    break;
+                default:
+                    strcpy(opr, "???"); // Unknown operator
+            }
+
+
+            // Generate target code
+            printf("\n\tMov %c,R%d", str[2], i);
+            printf("\n\t%s %c,R%d", opr, str[4], i);
+            printf("\n\tMov R%d,%c", i, str[0]);
+        }
+
+    } while (strcmp(icode[++i], "exit") != 0);
+
+    return 0;
+}
+o/p
+Enter the set of intermediate code (terminated by exit):
+a=b+c
+x=y*z
+p=q
+exit
