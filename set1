@@ -1,0 +1,122 @@
+			word count
+/* Lex program to count lines, words and characters */
+
+%{
+#include <stdio.h>
+
+int lc = 0, wc = 0, ch = 0;
+%}
+
+%%
+
+\n {
+    lc++;
+    ch++;
+}
+
+[^ \t\n]+ {
+    wc++;
+    ch += yyleng;
+}
+
+. {
+    ch++;
+}
+
+%%
+
+int main()
+{
+    printf("Enter the text (Ctrl+D to end):\n");
+
+    yylex();
+
+    printf("\nNo. of lines = %d", lc);
+    printf("\nNo. of words = %d", wc);
+    printf("\nNo. of characters = %d\n", ch);
+
+    return 0;
+}
+
+int yywrap()
+{
+    return 1;
+}
+
+
+
+			Lex anal using c
+
+#include<stdio.h>
+#include<string.h>
+#include<ctype.h>
+
+int main()
+{
+    int c;
+    int i;
+    char word[30];
+    int line=1;
+    FILE *fp;
+
+    fp = fopen("sample.txt","r");
+
+    if(fp==NULL){
+        printf("file not found\n");
+        return 1;
+    }
+
+    while((c=getc(fp))!=EOF){
+
+        if(isdigit(c)){
+            printf("%c",c);
+
+            while(isdigit(c=getc(fp))){
+                printf("%c",c);
+            }
+
+            printf(" is a number\n");
+            ungetc(c,fp);
+        }
+
+        else if(isalpha(c)||c=='_'){
+            i=0;
+            word[i++]=c;
+
+            while(isalnum(c=getc(fp))||c=='_'){
+                if(i<29)
+                    word[i++]=c;
+            }
+
+            word[i]='\0';
+
+            if(!strcmp(word,"int")){
+                printf("%s is a keyword\n",word);
+            }
+            else{
+                printf("%s is an identifier\n",word);
+            }
+
+            ungetc(c,fp);
+        }
+
+        else if(c=='\n'){
+            line++;
+        }
+
+        else if(isspace(c)){
+            continue;
+        }
+
+        else{
+            printf("%c is a special character\n",c);
+        }
+    }
+
+    fclose(fp);
+
+    printf("Total number of lines is %d\n",line);
+
+    return 0;
+}
+

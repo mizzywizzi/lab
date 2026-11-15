@@ -1,0 +1,92 @@
+				arithemetic expression lex 
+%{
+#include "y.tab.h"
+%}
+%%
+[a-zA-Z]+ return ID;
+[0-9]+ return NUMBER;
+\n return 0;
+. return yytext[0];
+%%
+int yywrap(){
+return 1;
+}
+arithemetic expression yacc 
+%{
+#include<stdio.h>
+int valid = 1;
+int yyerror(const char * s);
+int yylex();
+%}
+
+%token ID NUMBER
+%left '+' '-'
+%left '*' '/' '%'
+%left '(' ')'
+
+%%
+Arithmetic : E;
+E : E '+' E
+  | E '-' E
+  | E '*' E
+  | E '/' E
+  | E '%' E
+  | ID
+  | NUMBER
+  ;
+%%
+
+int yyerror(const char * s)
+{
+printf("Invalid\n");
+valid = 0;
+return 0;
+}
+
+int main()
+{
+printf("Enter an expresiion \n");
+yyparse();
+if(valid)
+printf("Valid\n");
+return 0;
+}
+
+
+
+			lex anal (:p) using lex
+%{
+#include <stdio.h>
+%}
+
+keywords    "if"|"for"|"else"|"int"|"char"|"double"|"float"
+const       [0-9]+
+identifier  [a-zA-Z_][a-zA-Z0-9_]*
+math_op     [+*/-]
+comp_op     [=><]
+sp_ch       [,;(){}]
+
+%%
+
+{keywords}    printf("\n%s\t is a keyword", yytext);
+{const}       printf("\n%s\t is a constant", yytext);
+{identifier}  printf("\n%s\t is an identifier", yytext);
+{math_op}     printf("\n%s\t is an arithmetic operator", yytext);
+{comp_op}     printf("\n%s\t is a comparison operator", yytext);
+{sp_ch}       printf("\n%s\t is a special character", yytext);
+
+[ \t\n]+      ;
+.             ;
+
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main()
+{
+    yylex();
+    return 0;
+}
